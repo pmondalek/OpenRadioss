@@ -258,6 +258,7 @@ C    abs(eps) not necessary
         STRAINRATE(I,1) = EPSP(1)*(ONE - STRAIN(I,1)) ! eng
         STRAINRATE(I,2) = EPSP(2)*(ONE - STRAIN(I,2))
         STRAINRATE(I,3) = EPSP(3)*(ONE - STRAIN(I,3))
+              print*, 'engirate ' , i, STRAINRATE(I,1), STRAINRATE(I,2)
 C computing energy increase
           YFAC = UPARAM(NFUNC + 11)
           QUASI_EINT= ZERO
@@ -529,6 +530,7 @@ C
         SIGNZZ(I) = DIRPRV(3,3,I)*DIRPRV(3,3,I)*T3        
      .            + DIRPRV(3,1,I)*DIRPRV(3,1,I)*T1
      .            + DIRPRV(3,2,I)*DIRPRV(3,2,I)*T2
+        !write(*,*) 'SIGNXX, SIGNYY ,SIGNZZ ' , SIGNXX(I), SIGNYY(I) ,SIGNZZ(I)
      
         SIGNXY(I) = DIRPRV(1,1,I)*DIRPRV(2,1,I)*T1
      .            + DIRPRV(1,2,I)*DIRPRV(2,2,I)*T2     
