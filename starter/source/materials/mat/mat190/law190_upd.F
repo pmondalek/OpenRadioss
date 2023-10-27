@@ -55,15 +55,17 @@ C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER  NUMTABL
       INTEGER ,DIMENSION(NUMTABL) :: ITABLE
-      TYPE(MATPARAM_STRUCT_)  ,TARGET :: MATPARAM
+      TYPE(MATPARAM_STRUCT_) ,INTENT(INOUT)  ,TARGET :: MATPARAM
       TYPE(TTABLE), DIMENSION(NTABLE) ,INTENT(INOUT) ,TARGET ::  TABLE
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: I,J,K,KK,NDIM,NPT,FUN_1,FUNC_ID,FUNC_T,FUNC_C,FUNC_S,ICONV,
-     .           SIZETOZERO,NPTMAX,IFX,IFY,STAT
+     .           SIZETOZERO,NPTMAX,IFX,IFY,STAT,
+     .           COUNT,NY,NUMBERFCT_TAB
       my_real :: XFAC,EPDT_MIN,EPDT_MAX,EPDC_MIN,EPDC_MAX,EPDS_MIN,EPDS_MAX,
-     .           XINT,YINT,X_I,X_II,Y_I,Y_II,ENER
+     .           XINT,YINT,X_I,X_II,Y_I,Y_II,ENER,
+     .           STIFFAVG,STIFFMAX,STIFFMIN,SLOPE,E0
       my_real ,DIMENSION(:)  ,ALLOCATABLE :: X_ENER,Y_ENER
       TYPE(TTABLE), DIMENSION(:) ,POINTER ::  TABLE_MAT
 C=======================================================================
@@ -156,6 +158,73 @@ c
       DEALLOCATE(X_ENER,Y_ENER)
 
 c------------------------------------------
+
+
+c===================================================
+c        compute slope and max slope
+c===================================================
+
+        STIFFAVG = ZERO
+        STIFFMAX = ZERO
+        STIFFMIN = EP20
+
+        COUNT = 0
+
+        !DO I = 1,NDIM
+          NPT = SIZE(TABLE(FUN_1)%X(1)%VALUES)
+          NY  = SIZE(TABLE(FUN_1)%Y%VALUES)
+          PRINT*, 'NY SIZE OF Y ARRAY NPT', NY,NPT
+          NUMBERFCT_TAB = NY / NPT
+          PRINT*, 'NUMBERFCT_TAB ', NUMBERFCT_TAB
+            X_I  =  TABLE(FUN_1)%X(1)%VALUES(1) 
+            X_II =  TABLE(FUN_1)%X(1)%VALUES(2) 
+            Y_I  =  TABLE(FUN_1 )%Y%VALUES(1)
+            Y_II =  TABLE(FUN_1 )%Y%VALUES(2)
+            
+         
+          DO K = 1, NPT-1
+            COUNT = COUNT + 1
+            X_I  =  TABLE(FUN_1)%X(1)%VALUES(K) 
+            X_II =  TABLE(FUN_1)%X(1)%VALUES(K+1) 
+            Y_I  =  TABLE(FUN_1 )%Y%VALUES(K)
+            Y_II =  TABLE(FUN_1 )%Y%VALUES(K+1)
+            
+            SLOPE  = (Y_II - Y_I)/(X_II-X_I)
+            STIFFMAX = MAX(STIFFMAX,SLOPE )
+            STIFFMIN = MIN(STIFFMIN,SLOPE )
+            STIFFAVG = STIFFAVG + SLOPE 
+          ENDDO
+       PRINT*, 'STIFFMAX ', STIFFMAX
+          DO K = NPT+1, 2*NPT-1
+            COUNT = COUNT + 1
+            X_I  =  TABLE(FUN_1)%X(1)%VALUES(K-NPT) 
+            X_II =  TABLE(FUN_1)%X(1)%VALUES(K-NPT+1) 
+            Y_I  =  TABLE(FUN_1 )%Y%VALUES(K)
+            Y_II =  TABLE(FUN_1 )%Y%VALUES(K+1)
+            PRINT*, 'Y_I,  Y_II ', Y_I,  Y_II
+            
+            SLOPE  = (Y_II - Y_I)/(X_II-X_I)
+            STIFFMAX = MAX(STIFFMAX,SLOPE )
+            STIFFMIN = MIN(STIFFMIN,SLOPE )
+            STIFFAVG = STIFFAVG + SLOPE 
+          ENDDO
+          STIFFAVG = STIFFAVG / COUNT
+        !END DO
+
+        E0       = MATPARAM%UPARAM(1)
+        STIFFMAX = MAX(STIFFMAX,E0)
+        PRINT*, 'STIFFMAX ', STIFFMAX
+c           EC_MAX = MAX(E0,EMAX)
+c           IF(EMAX <= E0) THEN
+c             EMAX = E0
+c           ELSE  
+c !!          EMAX= MIN(EMAX, HUNDRED*E0) 
+c            EMAX = HUNDRED*E0 ! by default value 
+c           ENDIF   
+        MATPARAM%UPARAM(10) = STIFFMAX
+        MATPARAM%UPARAM(11) = STIFFMIN
+
+c====================================================
       RETURN
       END
       END MODULE

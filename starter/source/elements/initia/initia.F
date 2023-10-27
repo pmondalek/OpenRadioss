@@ -3645,10 +3645,10 @@ C-print in fonction of elem types ITY
           IF (IHBE<=2.AND.ISOLNOD==8) QH = GEO(13,IPID)
           QA = GEO(14,IPID)
           QB = GEO(15,IPID)
-C-------this is done in ENGINE, should be done in Starter          
-          IF (MID==70 .AND.IGEO(31,IPID) == 1) THEN
+C-------this is done in ENGINE mulaw for FACQ0, should be done in Starter          
+          IF ((MID==70.OR.MID==90.OR.MID==190) .AND.IGEO(31,IPID) == 1) THEN
            QA = ZERO
-           QB = ZERO
+           QB = ZERO 
           END IF
           DN = ZERO
           IF (ISOLNOD==8.AND.(IHBE==24.OR.IHBE==15)) DN = GEO(13,IPID)

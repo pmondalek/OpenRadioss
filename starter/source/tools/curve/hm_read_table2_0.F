@@ -179,7 +179,8 @@ C
        ! number of ordinate values                                                                
        NY=1                                                                                      
        DO K=1,NDIM                                                                               
-         NY=NY*SIZE(TABLE(L)%X(K)%VALUES)                                                        
+         NY=NY*SIZE(TABLE(L)%X(K)%VALUES)       
+         PRINT*,'  NY ',     NY                                          
        END DO                                                                                    
        ALLOCATE(TABLE(L)%Y,STAT=stat)                                                            
 

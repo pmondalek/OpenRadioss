@@ -173,7 +173,8 @@ C-----------------------------------------------
          LX(2)=LX(2)+1                                                                                
          DO N=1,NDIM-1                                                                                
           XV2(LX(2),N)=X234(N)                                                                        
-         END DO                                                                                       
+         END DO       
+         PRINT*, '   IDFUNC   =',  IDFUNC                                                                         
          DO NF=1,NTABLE                                                                               
            IF(TABLE(NF)%NOTABLE==IDFUNC)THEN                                                          
              DO NP=1,SIZE(TABLE(NF)%X(1)%VALUES)                                                      
@@ -308,6 +309,7 @@ C dicho
           END DO                                                  
 C
 C aiguille
+           PRINT*,'NTABLE ', NTABLE
           DO NF=1,NTABLE                                              
             IF(TABLE(NF)%NOTABLE==IDFUNC)THEN                         
               NOK(1)=1                                                
@@ -358,7 +360,8 @@ c error (fonction 1 seul pt)
              R=(X2-XX)/(X2-X1)              
              YY=R*Y1+(ONE-R)*Y2              
              KK1=NX(1)*(KK-1)+N1            
-             TABLE(L)%Y%VALUES(KK1)=YY      
+             TABLE(L)%Y%VALUES(KK1)=YY   
+                 PRINT*,'L   DE TABLE', L 
              ITAG(N1,KK)=1                  
            END IF                           
          END DO                             
@@ -415,6 +418,7 @@ c         END DO !pmo mw
        DEALLOCATE(ITAG)
 
        NY=SIZE(TABLE(L)%Y%VALUES)
+       PRINT*, 'NY , SIZE(TABLE(L) ', NY
        IF (IS_ENCRYPTED)THEN                                     
          WRITE(IOUT,'(A)')'CONFIDENTIAL DATA'
        ELSE

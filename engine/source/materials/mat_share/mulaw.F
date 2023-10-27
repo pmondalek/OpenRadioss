@@ -1413,13 +1413,16 @@ C
 C-------------------
 C     visco-hypereslatic law defined by stress strain curve
 C-------------------       
+C qa=qb=zero by default for law90        
+
+        !IF (IGEO(31,PID(1)) == 1) FACQ0 = ZERO
         CALL SIGEPS90(NEL ,NUVAR,NFUNC,IFUNC,NPF ,                       
      2                  TF  ,TT,UPARAM,RHO0,
      3                  EP1 ,EP2 ,EP3 ,EP4  ,EP5  ,EP6 ,
      4                  ES1 ,ES2 ,ES3 ,ES4  ,ES5  ,ES6 ,
      5                  S1  ,S2  ,S3  ,S4   ,S5   ,S6  ,
      6                  SSP ,VIS ,UVAR,ISMSTR,
-     7                  ISRATE,ASRATE, GBUF%OFF ,IHET ,ET ,EPSD  ) 
+     7                  ISRATE,ASRATE, GBUF%OFF ,IHET ,ET ,EPSD  ,NGL) 
 C      
       ELSEIF (MTN == 92) THEN 
           CALL SIGEPS92(NEL ,NPAR,NUVAR,NFUNC,IFUNC,
@@ -1802,14 +1805,16 @@ c
      .                   DPLA  ,ET    ,IPM   ,MAT   ,ISRATE,
      .                   YLDFAC,EPSP  ) 
       ELSEIF (MTN == 190) THEN !Path dependent foam (Dubois)
-
+C qa=qb=zero by default for law190    
+        !print*, '    IGEO(31,PID(1)) ', IGEO(31,PID(1))
+        !IF (IGEO(31,PID(1)) == 1) FACQ0 = ZERO
         CALL SIGEPS190(NEL ,NUVAR,TT   ,RHO ,
      1                 EP1 ,EP2 ,EP3 ,EP4  ,EP5  ,EP6 ,          
      2                 S1  ,S2  ,S3  ,S4   ,S5   ,S6  ,          
      3                 MFXX,MFXY,MFXZ,MFYX ,MFYY ,MFYZ,          
      4                 MFZX ,MFZY,MFZZ,                          
      5                 SSP ,VIS ,UVAR,                           
-     6                 MATPARAM%NTABLE,MATPARAM,NVARTMP, VARTMP) 
+     6                 MATPARAM%NTABLE,MATPARAM,NVARTMP, VARTMP,NGL) 
 C      
 c----------------------------------------
       ENDIF  ! MTN

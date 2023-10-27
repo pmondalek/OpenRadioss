@@ -341,7 +341,7 @@ C--------------------------------------------------
         ENDIF
 
         ! law70 (/MAT/FOAM_TAB)
-        IF(ILAW == 70 .AND. IGEO(31,IPID) == 1) WRITE(IOUT,2000)
+        IF((ILAW == 70 .OR. ILAW==90 .OR. ILAW==190) .AND. IGEO(31,IPID) == 1) WRITE(IOUT,2000)
 
 c-------------------------------------------------------------------
 c      ALE EULER SPECIFIC TREATMENTS
@@ -489,7 +489,7 @@ C-------------------------------------
       CALL UDOUBLE(IPART(4,1),LIPART1,NPART,MESS,0,BID)
 C-------------------------------------
       RETURN
- 2000 FORMAT(5X,'FOR LAW 70 THE DEFAULT VALUE OF Qa and Qb IS 0' )
+ 2000 FORMAT(5X,'FOR LAW 70-90-190 THE DEFAULT VALUE OF Qa and Qb IS 0' )
 C
       END
 Chd|====================================================================

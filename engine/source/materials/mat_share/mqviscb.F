@@ -193,6 +193,7 @@ C
         ENDDO
         QA =FACQ*GEO(14,PID(1))
         QB =FACQ*GEO(15,PID(1))
+        !print*, 'QA , QB ', QA , QB
         CNS1_0=FACPG*GEO(16,PID(1))
         CNS2_0=FACPG*GEO(17,PID(1))
         PSH(1:NEL)=PM(88,MT)

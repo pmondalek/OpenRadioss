@@ -36,7 +36,7 @@ Chd|====================================================================
      4     EPSXX  ,EPSYY  ,EPSZZ   ,EPSXY   ,EPSYZ   ,EPSZX  ,
      5     SIGNXX ,SIGNYY ,SIGNZZ  ,SIGNXY  ,SIGNYZ  ,SIGNZX ,
      6     SOUNDSP,VISCMAX,UVAR    ,ISMSTR,
-     7     ISRATE ,ASRATE ,OFFG    ,IHET    ,ET      ,EPSD  )
+     7     ISRATE ,ASRATE ,OFFG    ,IHET    ,ET      ,EPSD  ,NGL)
 C-----------------------------------------------
 C   I m p l i c i t   T y p e s
 C-----------------------------------------------
@@ -86,6 +86,7 @@ C---------+---------+---+---+--------------------------------------------
 #include      "impl1_c.inc"
 C
       INTEGER, INTENT(IN) :: NEL,NUVAR,ISMSTR,ISRATE,IHET
+            INTEGER, DIMENSION(NEL),INTENT(IN) :: NGL
        
       my_real, INTENT(IN) ::
      .   TIME,UPARAM(*),
@@ -131,7 +132,7 @@ C-----------------------------------------------
      . YFAC,YFACJ1,YFACJ2,RATEJ1,RATEJ2, EPSE,EP1,
      . EP2,EP3,EP4,EP5,EP6,ERT11,ERT12,ERT13,ERT21,
      . ERT22,ERT23,ERT31,ERT32,ERT33,SJ1,SJ2,FAC,T1,T2,T3,
-     . DAM,EPE,E_MIN(MVSIZ),DELTA,ALPHA
+     . DAM,EPE,E_MIN(MVSIZ),DELTA,ALPHA,bidon
       my_real :: DF(3),
      .  EPSP(3),ECURENT(MVSIZ),E(MVSIZ),DEINT(MVSIZ),
      .  RATEEPS, DEPS,E_MAX,E_NEW,E_OLD,EPSS,YLD(MVSIZ),EPST(MVSIZ),DE
@@ -142,6 +143,7 @@ C-----------------------------------------------
 C-----------------------------------------------
 C     USER VARIABLES INITIALIZATION
 C-----------------------------------------------    
+           bidon=ngl(1) 
         E0      =  UPARAM(1)
         G       =  UPARAM(4)
         NU      =  UPARAM(5)
@@ -210,6 +212,7 @@ C e=1-lambda (e > 0 compression and e < 0 traction)
             STRAIN(I,1) = ONE - EV(I,1)         
             STRAIN(I,2) = ONE - EV(I,2)         
             STRAIN(I,3) = ONE - EV(I,3) 
+            write(*,*) 'STRAIN(I,1), STRAIN(I,2),STRAIN(I,3) ', STRAIN(I,1), STRAIN(I,2),STRAIN(I,3)
         
             EPST(I) = SQRT(STRAIN(I,1)**2 + STRAIN(I,2)**2 + STRAIN(I,3)**2)       
 C
@@ -511,6 +514,7 @@ C S < 0 for traction
             T1 = -S(I,1)/EV(I,2)/EV(I,3) 
             T2 = -S(I,2)/EV(I,1)/EV(I,3) 
             T3 = -S(I,3)/EV(I,1)/EV(I,2) 
+            write(*,*) 'T1 , T2 , T3  ',T1 , T2 , T3   
 C 
 C cauchy to glabale
 C
@@ -525,6 +529,9 @@ C
             SIGNZZ(I) = DIRPRV(I,3,3)*DIRPRV(I,3,3)*T3        
      .                + DIRPRV(I,3,1)*DIRPRV(I,3,1)*T1
      .                + DIRPRV(I,3,2)*DIRPRV(I,3,2)*T2
+
+
+            write(*,*) 'SIGNXX(I) , SIGNYY(I) , SIGNZZ(I)  ',SIGNXX(I) , SIGNYY(I) , SIGNZZ(I)
             SIGNXY(I) = DIRPRV(I,1,1)*DIRPRV(I,2,1)*T1
      .                + DIRPRV(I,1,2)*DIRPRV(I,2,2)*T2     
      .                + DIRPRV(I,1,3)*DIRPRV(I,2,3)*T3
@@ -536,7 +543,7 @@ C
             SIGNZX(I) = DIRPRV(I,3,3)*DIRPRV(I,1,3)*T3
      .                + DIRPRV(I,3,1)*DIRPRV(I,1,1)*T1
      .                + DIRPRV(I,3,2)*DIRPRV(I,1,2)*T2         
-         
+                ! IF(NGL(I)== 2671)print*, 'SIGNXX(I), SIGNZZ(I) ',SIGNXX(I), SIGNZZ(I)
 C==================================================       
       ! computing E
             E_OLD = UVAR(I,8)
@@ -551,8 +558,7 @@ C==================================================
             UVAR(I,8) = E_NEW
             AA = E_NEW*(ONE-NU)/(ONE + NU)/(ONE - TWO*NU) 
             SOUNDSP(I) = SQRT(AA/RHO0(I))
-            VISCMAX(I) = ZERO 
-        
+            VISCMAX(I) = ZERO         
         ENDDO  
         IF (IMPL_S > 0 .OR. IHET > 1) THEN
           DO I=1,NEL

@@ -203,6 +203,7 @@ C----------------------------
 C----------------------------
 C /FUNCT/TABLE/1/id, NDIM>1
 C----------------------------
+       PRINT*, 'L  , NFUNCT =', L ,NFUNCT
       IF(NTABLE1> 0) THEN
        CALL HM_READ_TABLE2_1(NTABLE,NTABLE1, TABLE,L ,NFUNCT , UNITAB, LSUBMODEL)      
       ENDIF

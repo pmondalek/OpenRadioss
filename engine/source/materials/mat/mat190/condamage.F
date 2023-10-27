@@ -170,6 +170,7 @@ C
         WHYSMAX(I)= MAX(WHYSMAX(I),WHYS(I))
         RATIO     = WHYS(I) / WHYSMAX(I)
         DAMAGE(I) =(ONE-HU)*(ONE - RATIO**SHAPE)
+        !print*, 'DAMAGE(I) ', DAMAGE(I)
       ENDDO
 C      
       RETURN

@@ -42,7 +42,7 @@ Chd|====================================================================
      4     MFXX   ,MFXY    ,MFXZ   ,MFYX    , MFYY   , MFYZ  ,
      5     MFZX   ,MFZY    ,MFZZ   ,                            
      6     SOUNDSP,VISCMAX,UVAR    ,                          
-     7     NUMTABL,MATPARAM,NVARTMP,VARTMP)
+     7     NUMTABL,MATPARAM,NVARTMP,VARTMP,NGL)
 C Material law for isotropic path dependent recoverable foam
 C-----------------------------------------------
 C   M o d u l e s
@@ -101,7 +101,7 @@ C-----------------------------------------------
 C   I N P U T   A r g u m e n t s
 C-----------------------------------------------
       INTEGER ,INTENT(IN) :: NEL,NUVAR,NVARTMP,NUMTABL
-      !INTEGER, DIMENSION(NEL),INTENT(IN) :: NGL
+      INTEGER, DIMENSION(NEL),INTENT(IN) :: NGL
       my_real ,INTENT(IN) :: TIME
       my_real ,DIMENSION(NEL) ,INTENT(IN) :: RHO,
      .         EPSPXX,EPSPYY,EPSPZZ,EPSPXY,EPSPYZ,EPSPZX,
@@ -146,12 +146,13 @@ C----------------------------------------------------------------
      .   S1   ,S2 ,S3 ,S4 ,S5 ,S6 ,
      .   FS11 ,FS12 ,FS13 ,FS21 ,FS22 ,FS23 ,
      .   FS31 ,FS32 ,FS33 ,SLOPEMAX ,  DAMAGE ,   
-     .   ZXXD ,ZYYD ,ZZZD ,ZXYD ,ZYZD ,ZZXD 
+     .   ZXXD ,ZYYD ,ZZZD ,ZXYD ,ZYZD ,ZZXD ,bidon,
+     .   EPST ,YLD
 c       
       my_real
-     .   G,K,NU,HU, SHAPE ,GS,KS,
+     .   G,K,NU,HU, SHAPE ,GS,KS,STIFFMAX,AA, DE,E_NEW,EPSS, E_OLD,
      .   EP2,EP3,EP4,EP5,EP6,ERT11,ERT12,ERT13,ERT21,E,EMOD,EP1,
-     .   ERT22,ERT23,ERT31,ERT32,ERT33,   SCAL,SCALINT,
+     .   ERT22,ERT23,ERT31,ERT32,ERT33,   SCAL,SCALINT,STIFF0,
      .   EPSP(3),
 C      
      .   STRAIN(NEL,3),SLOPE(NEL,3),DRATE(NEL,3),EV(NEL,3),
@@ -176,6 +177,10 @@ C
   
       HU      = MATPARAM%UPARAM(8)       
       SHAPE   = MATPARAM%UPARAM(9)    
+      STIFFMAX= EMOD* HUNDRED!MATPARAM%UPARAM(10) 
+      IF(TIME == ZERO )UVAR(1:NEL,30) = EMOD
+      STIFF0 = FOUR_OVER_3*G + K
+
 c===================================================================================
 c     FPxx = Deformation Gradient
       DO I=1,NEL                  
@@ -193,9 +198,11 @@ c     FPxx = Deformation Gradient
         DO I=1,NEL                        
           UVAR(I,1) = ONE               
           UVAR(I,2) = ONE                
-          UVAR(I,3) = ONE                         
+          UVAR(I,3) = ONE      
+                
         ENDDO                             
       ENDIF                               
+          bidon=ngl(1) 
 c                              
       DO I=1,NEL                          
         FPOSXX(I) = UVAR(I,1)  
@@ -340,6 +347,11 @@ c C
         STRAIN(I,1) = ONE - EV(I,1)        
         STRAIN(I,2) = ONE - EV(I,2)        
         STRAIN(I,3) = ONE - EV(I,3) 
+
+            !write(*,*) 'STRAIN(I,1), STRAIN(I,2),STRAIN(I,3) ', STRAIN(I,1), STRAIN(I,2),STRAIN(I,3)
+
+
+        EPST(I) = SQRT(STRAIN(I,1)**2 + STRAIN(I,2)**2 + STRAIN(I,3)**2)        !TO TEST IN SSP
 c c     abs(eps) not necessary  
         DRATE(I,1) = EPSP(1)*(ONE - STRAIN(I,1)) ! eng
         DRATE(I,2) = EPSP(2)*(ONE - STRAIN(I,2))
@@ -358,7 +370,7 @@ c      dynamic overstress ( principal directions of GL and 2PK are same )
 c
       CALL CONVERSION(ZXXMID, ZYYMID  ,ZZZMID, ZXYMID, ZYZMID, ZZXMID,  
      .                   CIJKL, DFIRST  ,DRATE , SCAL  , NEL   , JAC , 
-     .                   SLOPE, NUMTABL ,MATPARAM%TABLE ,NVARTMP,VARTMP)
+     .                   SLOPE, NUMTABL ,MATPARAM%TABLE ,NVARTMP,VARTMP,YLD)
 C
       DO I = 1,NEL
 C
@@ -428,6 +440,7 @@ C
         DO IK=1,6
           SPK(I,IK)=SPKNODAM(I,IK)*(ONE-DAMAGE(I))
         ENDDO
+        !YLD(I) = SQRT(SPK(I,1)**2 + SPK(I,2)**2 + SPK(I,3)**2 + TWO * (SPK(I,4)**2 + SPK(I,5)**2 + SPK(I,6)**2))
 C
 C       transform 2PK to Cauchy stresses  
 C
@@ -461,20 +474,58 @@ C
         SIGNXY(I) = SIGNXY(I) / JAC(I)   
         SIGNYZ(I) = SIGNYZ(I) / JAC(I)   
         SIGNZX(I) = SIGNZX(I) / JAC(I)  
+            !write(*,*) 'SIGNXX(I) , SIGNYY(I) , SIGNZZ(I)  ',SIGNXX(I) , SIGNYY(I) , SIGNZZ(I)
+        
 C
 C       timestep if the slope of the stress/strain curve
 C       exceeds the user specified modulus
 C
+
+
+c       ! computing E
+c       E_OLD = UVAR(I,8)
+c       EPSS = EPST(I) - YLD(I)/ E_OLD
+c       EPSS = MAX(ZERO, EPSS)
+c       EPSS = MIN(ONE, EPSS)
+c       AA = E_MAX - E0  
+c       DE = AA*(EPSS - UVAR(I,10))
+c       E_NEW = AA*EPSS + E0
+c       E_NEW= MIN(E_MAX, E_NEW)
+c       UVAR(I,10) = EPSS
+c       UVAR(I,8) = E_NEW
+c       AA = E_NEW*(ONE-NU)/(ONE + NU)/(ONE - TWO*NU) 
+c       SOUNDSP(I) = SQRT(AA/RHO0(I))
+c       VISCMAX(I) = ZERO 
         GS=G
         KS=K
         SLOPEMAX(I)=MAX(SLOPE(I,1), SLOPE(I,2))
         SLOPEMAX(I)=MAX(SLOPEMAX(I), SLOPE(I,3))
+        SLOPEMAX(I)=MAX(SLOPEMAX(I),STIFF0)
         !SLOPEMAX(I)=MIN(SLOPEMAX(I), HUNDRED * EMOD)
         IF (SLOPEMAX(I) > EMOD) THEN
           GS =SLOPEMAX(I)*HALF
           KS =SLOPEMAX(I)*THIRD
         ENDIF
-        SOUNDSP(I) = SQRT((GS*FOUR_OVER_3 + KS)/RHO(I))
+
+
+        E_OLD = UVAR(I,30)
+        EPSS = EPST(I) - YLD(I)/ E_OLD
+        EPSS = MAX(ZERO, EPSS)
+        EPSS = MIN(ONE, EPSS)
+        AA   = STIFFMAX - EMOD
+        DE   = AA*(EPSS - UVAR(I,31))
+        E_NEW = AA*EPSS + EMOD
+        E_NEW = MIN(STIFFMAX, E_NEW)
+        UVAR(I,31) = EPSS    
+        UVAR(I,30) = E_NEW
+        AA = E_NEW*(ONE-NU)/(ONE + NU)/(ONE - TWO*NU) 
+        SOUNDSP(I) = SQRT(AA/RHO(I))
+        !SOUNDSP(I) = SQRT((GS*FOUR_OVER_3 + KS)/RHO(I))
+        !test stiff current 
+         !SOUNDSP(I)=SQRT(SLOPEMAX(I)/RHO(I))
+       
+
+
         VISCMAX(I) = ZERO
       ENDDO
 C-------------------------------------------------------------------------

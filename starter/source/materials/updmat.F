@@ -371,7 +371,7 @@ c-------------------------
 c------------------
           CASE (190) !PAth dependent foam (dubois)
 c------------------
-            CALL LAW190_UPD(MATPARAM ,NUMTABL ,ITABLE   ,TABLE   )       
+            CALL LAW190_UPD(MATPARAM ,NUMTABL ,ITABLE   ,TABLE  )       
 c------------------
 c
         END SELECT ! (ILAW)  

@@ -137,7 +137,7 @@ C-----------------------------------------------
 C-------------------------------------------
 C User Material Parameters Definition
 C-------------------------------------------
-      MATPARAM%NUPARAM = 9
+      MATPARAM%NUPARAM = 15
 
       ALLOCATE (MATPARAM%UPARAM(MATPARAM%NUPARAM))
 
@@ -151,7 +151,7 @@ C-------------------------------------------
       MATPARAM%UPARAM(8) = HU
       MATPARAM%UPARAM(9) = SHAPE
 
-      NUVAR   = 30  ! Number of User Element Variables and Curves
+      NUVAR   = 33  ! Number of User Element Variables and Curves
       NVARTMP = 18
 
 

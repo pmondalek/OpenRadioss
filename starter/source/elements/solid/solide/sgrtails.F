@@ -1162,7 +1162,7 @@ C-------- warning out for no-zero input
           ENDIF !IF (JHBE == 18 )
 C-----due to ICPRE automatic          
           IF (ICPRE == 3.AND.(IGT == 14.OR.IGT == 6)) ICPRE =0
-          IF((MLN == 95 .OR. MLN == 100 .OR. MLN == 101 .OR. MLN == 111) .AND. ISSN /= 10 ) THEN
+          IF((MLN == 95 .OR. MLN == 100 .OR. MLN == 101 .OR. MLN == 111 .OR.MLN ==190 ) .AND. ISSN /= 10 ) THEN
             ISSN = 10
                 CALL ANCMSG(MSGID=1200,
      .                      MSGTYPE=MSGWARNING,
