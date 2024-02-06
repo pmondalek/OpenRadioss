@@ -194,6 +194,7 @@ C-----------------------------------------------
 #include      "com_xfem1.inc"
 #include      "timeri_c.inc"
 #include      "nchar_c.inc"
+#include      "com01_c.inc"
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -444,6 +445,7 @@ c
       ENDIF
       ISRATE = IPM(3,MX)
 c
+
       IF (ISRATE == 1) THEN
 #include "vectorize.inc" 
         DO I=JFT,JLT
@@ -1290,19 +1292,18 @@ C
           ELSEIF (ILAW == 57) THEN
            CALL SIGEPS57C(
      1        JLT    ,NUPARAM0,NUVAR   ,NFUNC    ,IFUNC  ,
-     2        NPF    ,NPT    ,IPT     ,IFLAG    ,
+     2        NPF    ,NPT    ,IPT     ,
      2        TF     ,TT     ,DT1C    ,UPARAM0   ,RHO    ,
-     3        AREA   ,EINT   ,THKLYL  ,
+     3        THKLYL  ,
      4        EPSPXX ,EPSPYY ,EPSPXY  ,EPSPYZ   ,EPSPZX ,
      5        DEPSXX ,DEPSYY ,DEPSXY  ,DEPSYZ   ,DEPSZX ,
      6        EPSXX  ,EPSYY  ,EPSXY   ,EPSYZ    ,EPSZX  ,
      7        LBUF%SIG(IJ1),LBUF%SIG(IJ2),LBUF%SIG(IJ3),LBUF%SIG(IJ4),LBUF%SIG(IJ5),
      8        SIGNXX ,SIGNYY ,SIGNXY  ,SIGNYZ   ,SIGNZX ,
-     9        SIGVXX ,SIGVYY ,SIGVXY  ,SIGVYZ   ,SIGVZX ,
      A        SSP    ,VISCMX ,THKN    ,LBUF%PLA ,UVAR   ,
      B        OFF    ,NGL    ,SHF     ,ETSE     ,SIGY   ,
      C        HARDM  ,LBUF%SEQ,ISRATE ,EPSP     ,INLOC  ,
-     D        VARNL(1,IT))
+     D        VARNL(1,IT),LBUF%SIGB)
           ELSEIF (ILAW == 58) THEN
 
            CALL SIGEPS58C(
@@ -2717,6 +2718,7 @@ c
       MOM(JFT:JLT,1)=MOM(JFT:JLT,1)*OFF(JFT:JLT)*DMG_GLOB_SCALE(JFT:JLT)
       MOM(JFT:JLT,2)=MOM(JFT:JLT,2)*OFF(JFT:JLT)*DMG_GLOB_SCALE(JFT:JLT)
       MOM(JFT:JLT,3)=MOM(JFT:JLT,3)*OFF(JFT:JLT)*DMG_GLOB_SCALE(JFT:JLT)
+
 C
 C!  --- specific treatment for law 119 - scale factor applied on internal forces---
       IF (ILAW == 119) THEN

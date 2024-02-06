@@ -268,6 +268,9 @@ C---------------------------------
       MTAG%L_PLA  = 1
       MTAG%L_EPSD = 1
       MTAG%G_EPSD = 1
+      IF (FISOKIN > ZERO) THEN 
+            MTAG%L_SIGB  = 3
+      ENDIF
 C---------------------------------
       ! MATPARAM keywords
       CALL INIT_MAT_KEYWORD(MATPARAM,"ORTHOTROPIC")
