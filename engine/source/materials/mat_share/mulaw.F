@@ -1823,7 +1823,7 @@ c
      3                 MFXX,MFXY,MFXZ,MFYX ,MFYY ,MFYZ,          
      4                 MFZX ,MFZY,MFZZ,                          
      5                 SSP ,VIS ,UVAR,                           
-     6                 MATPARAM%NTABLE,MATPARAM,NVARTMP, VARTMP) 
+     6                 MATPARAM%NTABLE,MATPARAM,NVARTMP, VARTMP,DT1) 
 C      
 c----------------------------------------
       ENDIF  ! MTN

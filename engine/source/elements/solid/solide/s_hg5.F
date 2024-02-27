@@ -123,6 +123,7 @@ C     REAL
      .   E0,G0,C1,NU,EHOURT ,QH,LAMG ,SFAC  
 C----------------------------------------------- 
 C------recompute modulus for law42,88,90
+      !print*, 'isol=5'
       MX = MAT(1)
       NU=PM(21,MX)
       G0=PM(22,MX)
@@ -143,6 +144,7 @@ C------recompute modulus for law42,88,90
         CASE DEFAULT
           LAMG = C1+FOUR_OVER_3*G0
       END SELECT
+      !print*, 'LAMG', LAMG
       SFAC = 0.038*QH*LAMG
       DO I=1,NEL
          CAQ(I)=SFAC*DT1*OFF(I)

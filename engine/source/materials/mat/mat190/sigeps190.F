@@ -40,7 +40,7 @@ Chd|====================================================================
      4     MFXX   ,MFXY    ,MFXZ   ,MFYX    , MFYY   , MFYZ  ,
      5     MFZX   ,MFZY    ,MFZZ   ,                            
      6     SOUNDSP,VISCMAX,UVAR    ,                          
-     7     NUMTABL,MATPARAM,NVARTMP,VARTMP)
+     7     NUMTABL,MATPARAM,NVARTMP,VARTMP,TIMESTEP)
 C-----------------------------------------------
 C   M o d u l e s
 C-----------------------------------------------
@@ -99,7 +99,7 @@ C   I N P U T   A r g u m e n t s
 C-----------------------------------------------
       INTEGER ,INTENT(IN) :: NEL,NUVAR,NVARTMP,NUMTABL
       !INTEGER, DIMENSION(NEL),INTENT(IN) :: NGL
-      my_real ,INTENT(IN) :: TIME
+      my_real ,INTENT(IN) :: TIME,TIMESTEP
       my_real ,DIMENSION(NEL) ,INTENT(IN) :: RHO,
      .         EPSPXX,EPSPYY,EPSPZZ,EPSPXY,EPSPYZ,EPSPZX,
      .         MFXX   ,MFXY   ,MFXZ ,MFYX, MFYY  , MFYZ  ,  
@@ -149,7 +149,7 @@ c
      .   G,K,NU,HU, SHAPE ,GS,KS,STIFFMAX,AA, DE,E_NEW,EPSS, E_OLD,
      .   EP2,EP3,EP4,EP5,EP6,ERT11,ERT12,ERT13,ERT21,E,EMOD,EP1,
      .   ERT22,ERT23,ERT31,ERT32,ERT33,   SCAL,SCALINT,STIFF0,TOL1,
-     .   EPSP(3),
+     .   EPSP(3),DEPS, E_TEST, SIGNORM,
 C      
      .   STRAIN(NEL,3),SLOPE(NEL,3),DRATE(NEL,3),EV(NEL,3),
      .   F(NEL,3,3),FO(NEL,3,3),C(NEL,3,3), EGL(NEL,6),
@@ -173,7 +173,7 @@ C
   
       HU      = MATPARAM%UPARAM(8)       
       SHAPE   = MATPARAM%UPARAM(9)    
-      STIFFMAX= EMOD* HUNDRED  
+      STIFFMAX=   EMOD* HUNDRED  
 
       TOL1   = MATPARAM%UPARAM(10) 
       IF(TIME == ZERO )UVAR(1:NEL,30) = EMOD
@@ -220,7 +220,8 @@ c
         UVAR(I,7) = FPSZX(I)              
         UVAR(I,8) = FPSYZ(I)              
         UVAR(I,9) = FPSZY(I)              
-        WHYSMAX(I)= UVAR(I,17)        
+        WHYSMAX(I)= UVAR(I,17)       
+        UVAR(I,50)= ZERO 
       ENDDO                               
                              
       DO I=1,NEL
@@ -309,7 +310,7 @@ c
         EP1 = EPSPXX(I)
         EP2 = EPSPYY(I)      
         EP3 = EPSPZZ(I) 
-        EP4 = HALF*EPSPXY(I)        
+        EP4 = HALF*EPSPXY(I)     ! transform engineering notation to tensor notation
         EP5 = HALF*EPSPYZ(I)
         EP6 = HALF*EPSPZX(I)
 c c      phi_trans*L*phi_t    
@@ -363,7 +364,7 @@ c      dynamic overstress ( principal directions of GL and 2PK are same )
       CALL CONVERSION(ZXXMID, ZYYMID  ,ZZZMID, ZXYMID, ZYZMID, ZZXMID,  
      .                   CIJKL, DFIRST  ,DRATE , SCAL  , NEL   , JAC , 
      .                   SLOPE, NUMTABL ,MATPARAM%TABLE ,NVARTMP,VARTMP,
-     .                   YLD,MATPARAM%TABLE(1)%NDIM,TOL1)
+     .                   YLD,MATPARAM%TABLE(1)%NDIM,TOL1,UVAR,NUVAR)
 C
       DO I = 1,NEL
 C
@@ -381,6 +382,9 @@ C
         DZXY(I) =DZXY(I)*TWO
         DZYZ(I) =DZYZ(I)*TWO
         DZZX(I) =DZZX(I)*TWO
+        !UVAR(I,43)  =    DZXX(I)     
+        !UVAR(I,44)  =    DZYY(I)      
+        !UVAR(I,45)  =    DZZZ(I)
 C
 C       INCREMENT HYPERELASTIC 2PK STRESSES   DS=C*DE
 C
@@ -389,6 +393,7 @@ C
      .        + CIJKL(I,1,IK)*DZXX(I)+CIJKL(I,2,IK)*DZYY(I)
      .        + CIJKL(I,3,IK)*DZZZ(I)+CIJKL(I,4,IK)*DZXY(I)
      .        + CIJKL(I,5,IK)*DZYZ(I)+CIJKL(I,6,IK)*DZZX(I)
+
         ENDDO
         UVAR(I,11)  =  SPKNORATE(I,1)         
         UVAR(I,12)  =  SPKNORATE(I,2)         
@@ -397,6 +402,21 @@ C
         UVAR(I,15)  =  SPKNORATE(I,5)         
         UVAR(I,16)  =  SPKNORATE(I,6)         
 
+        
+        UVAR(I,47)  =  CIJKL(I,2,2)         
+        UVAR(I,48)  =  CIJKL(I,3,3)         
+        UVAR(I,49)  =  CIJKL(I,3,3)         
+        UVAR(I,51)  =  CIJKL(I,4,4)         
+        UVAR(I,52)  =  CIJKL(I,5,5)         
+        UVAR(I,53)  =  CIJKL(I,6,6)     
+
+        UVAR(I,54)  =  CIJKL(I,1,2)         
+        UVAR(I,55)  =  CIJKL(I,1,3)         
+        UVAR(I,56)  =  CIJKL(I,2,3)         
+        UVAR(I,57)  =  CIJKL(I,3,4)         
+        UVAR(I,58)  =  CIJKL(I,5,4)         
+        UVAR(I,59)  =  CIJKL(I,6,1)     
+                 
 c       add the viscous 2PK stresses ( dynamic overstress )
 c       drate = dynamic principal 2PK - static principal 2PK
 C
@@ -484,6 +504,15 @@ C
         E_NEW = AA*EPSS + EMOD
         E_NEW = MIN(STIFFMAX, E_NEW) 
         UVAR(I,30) = E_NEW
+
+c         signorm = sqrt(SIGNXX(I)**2 +SIGNYY(I)**2 + SIGNZZ(I)**2 
+c      .      + two*(SIGNXY(I)**2+  SIGNYZ(I) **2 + SIGNZX(I)**2   ) )
+         deps = sqrt(EPSPXX(I)**2 + EPSPYY(I)**2 + EPSPZZ(I)**2 
+     .      + two*(EPSPXY(I)**2+  EPSPYZ(I) **2 + EPSPZX(I)**2   ) )*timestep 
+c         E_TEST = mAX(STIFFMAX,abs(signorm - UVAR(I,49)) / MAX(EM20,deps ) )
+c         UVAR(I,49) = signorm
+c         UVAR(I,46) = E_TEST
+        !AA =  UVAR(I,50)
         AA = E_NEW*(ONE-NU)/(ONE + NU)/(ONE - TWO*NU) 
         SOUNDSP(I) = SQRT(AA/RHO(I))
 

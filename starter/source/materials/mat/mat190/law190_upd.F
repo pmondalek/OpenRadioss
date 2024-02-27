@@ -36,7 +36,8 @@ Chd|-- calls ---------------
 Chd|        INTERFACE_TABLE_MOD           share/modules1/table_mod.F    
 Chd|        MATPARAM_DEF_MOD              ../common_source/modules/mat_elem/matparam_def_mod.F
 Chd|====================================================================
-      SUBROUTINE LAW190_UPD(MATPARAM ,NUMTABL ,ITABLE   ,TABLE       )
+      SUBROUTINE LAW190_UPD(MATPARAM ,NUMTABL ,ITABLE   ,TABLE ,
+     .                      NPROPM   ,PM        )
 C----------------------------------------------- 
 C   M o d u l e s
 C-----------------------------------------------      
@@ -52,7 +53,9 @@ C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER  NUMTABL
+      INTEGER ,INTENT(IN) :: NPROPM
       INTEGER ,DIMENSION(NUMTABL) :: ITABLE
+      my_real ,DIMENSION(NPROPM)  ,INTENT(INOUT) :: PM
       TYPE(MATPARAM_STRUCT_)  ,TARGET :: MATPARAM
       TYPE(TTABLE), DIMENSION(NTABLE) ,INTENT(INOUT) ::  TABLE
 C-----------------------------------------------
@@ -60,8 +63,8 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: I,J,K,KK,NDIM,NPT,FUN_1,FUNC_ID,FUNC_T,FUNC_C,FUNC_S,ICONV,
      .           SIZETOZERO,NPTMAX,IFX,IFY,STAT,LEN2,LEN3
-      my_real :: XFAC,EPDT_MIN,EPDT_MAX,EPDC_MIN,EPDC_MAX,EPDS_MIN,EPDS_MAX,
-     .           XINT,YINT,X_I,X_II,Y_I,Y_II,ENER
+      my_real :: XFAC,EPDT_MIN,EPDT_MAX,EPDC_MIN,EPDC_MAX,EPDS_MIN,EPDS_MAX,YOUNG,
+     .           XINT,YINT,X_I,X_II,Y_I,Y_II,ENER,STIFFINI,STIFFMIN,STIFFMAX,XMAX
       my_real ,DIMENSION(:)  ,ALLOCATABLE :: X_ENER,Y_ENER
       TYPE(TABLE_4D_), DIMENSION(:) ,POINTER ::  TABLE_MAT
 C=======================================================================
@@ -171,6 +174,15 @@ c
           TABLE_MAT(2)%Y1D(I) = Y_ENER(I)
       END DO
       DEALLOCATE(X_ENER,Y_ENER)
+
+c------------------------------------------
+c     compute maximum of slope       
+c------------------------------------------
+
+      CALL TABLE_SLOPE(TABLE_MAT(1),STIFFINI,STIFFMIN,STIFFMAX,XMAX)
+      print*, 'STIFFMAX', STIFFMAX
+      YOUNG = MATPARAM%UPARAM(1)
+      PM(24) = MAX(YOUNG,  STIFFMAX)
 
 c------------------------------------------
       RETURN

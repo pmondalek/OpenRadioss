@@ -145,11 +145,11 @@ C-------------------------------------------
 
       ALLOCATE (MATPARAM%UPARAM(MATPARAM%NUPARAM))
 
-      MATPARAM%UPARAM(1) = EMOD
+      MATPARAM%UPARAM(1) = TEN * EMOD
       MATPARAM%UPARAM(2) = E
-      MATPARAM%UPARAM(3) = BULK
+      MATPARAM%UPARAM(3) = TEN * BULK
       MATPARAM%UPARAM(4) = NU
-      MATPARAM%UPARAM(5) = G
+      MATPARAM%UPARAM(5) = TEN * G
       MATPARAM%UPARAM(6) = XFAC(1)
 
       MATPARAM%UPARAM(8) = HU
@@ -157,7 +157,7 @@ C-------------------------------------------
 
       MATPARAM%UPARAM(10) = TOL1
       MATPARAM%UPARAM(11) = TOL2
-      NUVAR   = 30  ! Number of User Element Variables and Curves
+      NUVAR   = 60  ! Number of User Element Variables and Curves
       NVARTMP = 18
 
 
@@ -168,7 +168,7 @@ C---- ---------------------------------------
       PM(89) = RHO0
 C---- ---------------------------------------
       PARMAT(1) = BULK
-      PARMAT(2) = E
+      PARMAT(2) =  E
       PARMAT(3) = NU
 
       !Formulation for solid elements time step computation.

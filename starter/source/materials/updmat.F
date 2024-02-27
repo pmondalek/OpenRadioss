@@ -258,14 +258,14 @@ c------------------
           CASE (76) 
 c------------------
             CALL LAW76_UPD(IOUT   ,TITR    ,MAT_ID   ,NPARAM ,MATPARAM ,
-     .                     UPARAM ,NUMTABL ,ITABLE   ,TABLE   ,NFUNC    ,
+     .                     UPARAM ,NUMTABL ,ITABLE   ,TABLE   ,NFUNC   ,
      .                     IFUNC  ,NPC     ,PLD      )       
 c
 c------------------
           CASE (77) 
 c------------------
             CALL LAW77_UPD(TITR    ,MAT_ID   ,NPARAM ,MATPARAM ,
-     .                     UPARAM  ,NFUNC    ,IFUNC  ,NPC      ,PLD      )       
+     .                     UPARAM  ,NFUNC    ,IFUNC  ,NPC      ,PLD )       
 c
 c          
 c------------------
@@ -392,7 +392,8 @@ c-------------------------
 c------------------
           CASE (190) !PAth dependent foam (dubois)
 c------------------
-            CALL LAW190_UPD(MATPARAM ,NUMTABL ,ITABLE   ,TABLE   )       
+            CALL LAW190_UPD(MATPARAM ,NUMTABL ,ITABLE   ,TABLE ,
+     .                      NPROPM   ,PM(1,IMAT)  )       
 c------------------
 c
         END SELECT ! (ILAW)  
