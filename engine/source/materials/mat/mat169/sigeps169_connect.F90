@@ -34,13 +34,14 @@
 ! material for cohesive element, elastic in normal direction, elastoplastic in shear, with coupled damage
 ! ======================================================================================================================         
         subroutine sigeps169_connect(                                          &
-          nel     ,time, uparam,iparam,                                        &
-          niparam , nuparam ,stifm   ,                                         &
+          nel     ,time, uparam,                                               &
+          nuparam ,stifm   ,                                                   &
           area    , off     ,nuvar  ,uvar  ,ipg      ,                         &
           depszz  ,depsyz   ,depszx ,epszz   ,epsyz    ,epszx   ,              &                             
           sigozz  ,sigoyz  ,sigozx  ,signzz  ,signyz ,signzx  ,                &
-          pla     ,iout    ,jsms    ,dmg     ,ngl   ,dmels , idtmins,dtfacs,   &
-          dtmins  ,thick0)
+          pla     ,iout    ,jsms    ,dmg     ,ngl   ,dmels ,                   &
+          idtmins,dtfacs   ,dtmins  , thick0)                                        
+
 !-----------------------------------------------
 !   m o d u l e s
 !-----------------------------------------------
@@ -52,10 +53,10 @@
 !-----------------------------------------------
 !   d u m m y   a r g u m e n t s
 !-----------------------------------------------       
-      integer ,intent(in)  :: nel,nuparam,niparam,nuvar,jsms,ipg,iout
+      integer ,intent(in)  :: nel,nuparam,nuvar,jsms,ipg,iout
 
       integer ,dimension(nel)       ,intent(in)    :: ngl
-      integer ,dimension(niparam)   ,intent(in)    :: iparam
+
       integer ,intent(in) :: idtmins
       my_real ,intent(in) :: dtfacs
       my_real ,intent(in) :: dtmins
@@ -79,16 +80,15 @@
         my_real        young,nu, wave,tenmax,gcten,shrmax, gcshr,shrp, sht_sl,pwrt,pwrs ,taumax
         my_real        dlam, dpla_dlam,shear,an,as,dp,g1,g2,sigeq,dtb,norm,nxz,nyz,d0fn,dfn,d0fs,dfs
         my_real, dimension(nel) :: dstrnz, dstrnxz, dstrnyz,strs_tr_sh,fyld,strn_pl,dstr_sh,epsn0
-        my_real, dimension(nel) :: normzz, normxz, normyz, df,dpzx,dpyz,ddpla,dpla,dmg_n,dmg_s
-        my_real, dimension(nel) :: fdam_n,fdam_s,thick,stf,tempr,normyz_norm,normxz_norm,eps_sh0,eps_sh
+        my_real, dimension(nel) :: normzz, normxz, normyz, df,dpzx,dpyz,dpzz,ddpla,dpla,dmg_n,dmg_s
+        my_real, dimension(nel) :: fdam_n,fdam_s,thick,stf,tempr,normyz_norm,normxz_norm,normzz_norm,eps_sh0,eps_sh
 
 !--------------------------------------------------------
-       
+     
 
-      pwrt     =   iparam(1) 
-      pwrs     =   iparam(2)  
+
       young    =   uparam(1) 
-      shear    =   uparam(2) 
+      shear    =   uparam(2)
       nu       =   uparam(3) 
       tenmax   =   uparam(4) 
       gcten    =   uparam(5) 
@@ -96,28 +96,24 @@
       gcshr    =   uparam(7) 
       shrp     =   uparam(8) 
       sht_sl   =   uparam(9) 
+      dfn      =   uparam(10)
+      dfs      =   uparam(11)
+      dp       =   uparam(12)
+      pwrt     =   uparam(13)
+      pwrs     =   uparam(14)
+      iterk    = 3
+
 
        
       do i=1,nel 
         epsn0(i)   = uvar(i,3)        
         eps_sh0(i) = uvar(i,4)    
       enddo
-  
 
-      an      = tenmax/gcten/two
-      as      = shrmax/two/gcshr
-      dp      = shrp /as  ! = shrp * dfail_shear
-      d0fn    = tenmax/young
-      dfn     = two*gcten/tenmax !displacement failure in tension
-      dfs     = two*gcshr/shrmax
-        
-      iterk   = 3
-
-
-      stf(1:nel)     = young *  area(1:nel)                                            
+      wave = young * (one-nu)/(one+nu)/(one-two*nu)
+      stf(1:nel)     = young *  area(1:nel)                                       
       stifm(1:nel)   = stifm(1:nel)  + stf(1:nel)*off(1:nel)                                              
-
-! omega = sqrt(2k/2*dmels), dt=2/omega, 2*dmels=dt**2 * 2k / 4
+      ! omega = sqrt(2k/2*dmels), dt=2/omega, 2*dmels=dt**2 * 2k / 4
       if (idtmins==2 .and. jsms/=0) then
         dtb = (dtmins/dtfacs)**2
         do iel=1,nel                                                 
@@ -125,23 +121,39 @@
         enddo                                                        
       end if                                                        
 
+      an      = tenmax/gcten/two
+      as      = shrmax/two/gcshr
+
+      
+
+        
       do i=1,nel  
         dmg_n(i) = uvar(i,1)
         dmg_s(i) = uvar(i,2)        
         fdam_n(i) = one - dmg_n(i)
         fdam_s(i) = one - dmg_s(i)
-        wave = young * (one-nu)/(one+nu)/(one-two*nu)/thick0(i)
+        wave = young * (one-nu)/(one+nu)/(one-two*nu)
+      ! write(*,*) ' dmg_n       = ',i,  dmg_n(i) 
       enddo                                                        
 
+
       dpla(1:nel) = zero
+     
       do i = 1,nel
         if (off(i) < 0.001)  off(i) = zero
         if (off(i) < one)    off(i) = off(i)*four/five
         if (off(i) == one) then
-          signzz(i) = sigozz(i)/fdam_n(i) + (depszz(i)  )*young !young is per unit length
-          signzz(i) = min(signzz(i),tenmax)
-          signyz(i) = sigoyz(i)/fdam_s(i) + (depsyz(i)  )*shear
-          signzx(i) = sigozx(i)/fdam_s(i) + (depszx(i)  )*shear
+         
+          signzz(i)     = sigozz(i)/fdam_n(i) + (depszz(i)  )*wave/thick0(i) !young is per unit length
+          signzz(i)     = min(signzz(i),tenmax)
+               ! write(*,*) ' signzz(i)  = ', i, signzz(i)
+
+          signyz(i)     = sigoyz(i)/ fdam_s(i)+ (depsyz(i)  ) *shear/thick0(i)
+          !signyz(i)     = min(signyz(i),shrmax)
+          !signyz(i)     = min(signyz(i),sigoyz(i))
+          signzx(i)     = sigozx(i)/ fdam_s(i)+ (depszx(i)  )*shear/thick0(i)
+          !signzx(i)     = min(signzx(i),shrmax)
+          !signzx(i)     = min(signzx(i),sigozx(i))
           strs_tr_sh(i) = sqrt( signyz(i)**2 + signzx(i)**2)
         endif
       enddo    
@@ -152,11 +164,13 @@
             fyld(i) = (max(signzz(i),zero)/ tenmax)**pwrt +                         &
                       (strs_tr_sh(i) /(shrmax -sht_sl * signzz(i) ))**pwrs 
             fyld(i) =  fyld(i) - one        
+            pla(i) = pla(i)
       enddo
          !-----------------------------------------------
          !   compute plasticity
          !-----------------------------------------------
       do i=1,nel
+        !if ((g2**pwrs-one) > zero.and. off(i) == one )then    
         if (fyld(i) > zero.and. off(i) == one )then  
           g1       = max(signzz(i),zero)/ tenmax
           g2       = strs_tr_sh(i) /(shrmax - sht_sl * signzz(i))
@@ -169,12 +183,15 @@
             normyz(i) =  pwrs * (g2 **(pwrs-1)   )                          &
                           * signyz(i)/max(strs_tr_sh(i),em20)               &
                           /(shrmax - sht_sl * signzz(i)) 
-            norm =  sqrt(normxz(i) **2 +  normyz(i)**2 )           
+            !normzz(i) = zero ! pwrt  * g1 **(pwrt -one) / tenmax                  &
+                   !        +pwrs * g2 **(pwrs-one)                          &
+                   ! * (sht_sl* strs_tr_sh(i) / (shrmax - sht_sl * signzz(i))**2 )
+            norm =  sqrt(normxz(i) **2 +  normyz(i)**2  )  !  + normzz(i)**2       
             normxz_norm(i) =   normxz(i)/norm
             normyz_norm(i) =   normyz(i)/norm       
-
+            !normzz_norm(i) =   normzz(i)/norm
             !df/dlam = df/dsig * dsig/dlam = nij * celas* nij
-            df(i) = -shear *(normxz(i) **2 + normyz(i)**2 ) /  norm   
+            df(i) = -((shear/thick0(i)) *(normxz(i) **2 + normyz(i)**2 ))/  norm   
             df(i) = sign(max(abs(df(i)),em20),df(i)) 
 
             ! computation of the plastic multiplier
@@ -182,26 +199,33 @@
             ! plastic strains tensor increment  
             dpzx(i) = dlam * normxz_norm(i)
             dpyz(i) = dlam * normyz_norm(i)
+
+            !dpzz(i) = dlam * normzz_norm(i)
             ! elasto-plastic stresses update   
-            signyz(i)     =  signyz(i) - shear * dpyz(i)
-            signzx(i)     =  signzx(i) - shear * dpzx(i)
+            signyz(i)     =  signyz(i) - shear/thick0(i) * dpyz(i)
+            signzx(i)     =  signzx(i) - shear/thick0(i) * dpzx(i)
+            !signzz(i)     =  signzz(i) - wave  * dpzz(i)
             strs_tr_sh(i) =  sqrt( signyz(i)**2 + signzx(i)**2)
             g2        =  strs_tr_sh(i) /(shrmax - sht_sl * signzz(i) )
+            !g1        = max(signzz(i),zero)/ tenmax
             sigeq     =  g1**pwrt + g2**pwrs
+            !fyld(i)   =  g2**pwrs- one
             fyld(i)   =  sigeq- one   
 
-            ddpla(i) = (signyz(i)*dpyz(i) + signzx(i)*dpzx(i))/strs_tr_sh(i) !(shrmax - sht_sl * signzz(i))                
+            ddpla(i) = (signyz(i)*dpyz(i) + signzx(i)*dpzx(i) )/strs_tr_sh(i) !(shrmax - sht_sl * signzz(i))                
             dpla(i)  = max(zero, dpla(i) + ddpla(i) )  
             pla(i)   = pla(i)  +  ddpla(i)          
           enddo
         endif
+        !print*, 'i, dpzx, dpyz ', i, dpzx(i),dpyz(i)
       enddo
    
       !  !  ! check if damage reached in normal direction
       nindxdn = 0
       nindf = 0
-      do i=1,nel           
-        if (signzz(i) >= tenmax .or. (dpla(i)>zero.and. signzz(i)>zero))  then         
+      do i=1,nel  
+        if (signzz(i) >= tenmax .or. (fyld(i)>zero.and. signzz(i)>zero))  then 
+        !if (signzz(i) >= tenmax .or. (dpla(i)>zero.and. signzz(i)>zero))  then         
           !compute damage (linear)   
           !dmg_n(i) =   dmg_n(i) + an *  depszz(i)   
           if(uvar(i,3) == zero) then
@@ -231,14 +255,17 @@
         dstr_sh(i)    = sqrt(depsyz(i)**2 + depszx(i)**2) 
         eps_sh(i)     = sqrt(epsyz(i)**2  + epszx(i)**2) 
         taumax        = shrmax - sht_sl * signzz(i)
-        if ((strs_tr_sh(i) >= taumax .or. dpla(i)>zero) .and. pla(i) >= dp )  then 
+        if (fyld(i) >zero) write(*,*) 'i, strs_tr_sh ', ngl(i) ,  strs_tr_sh(i)
+        !if ((strs_tr_sh(i) >= taumax .or. dpla(i)>zero ).and. pla(i) >= dp )  then 
+        if ((strs_tr_sh(i) >= taumax .or. fyld(i)>zero) .and. (eps_sh(i) - eps_sh0(i)) >= dp)then !.and. pla(i) >= dp 
           if(uvar(i,4)==zero) then 
             eps_sh0(i) = eps_sh(i)
             uvar(i,4)  = eps_sh0(i)
             nindxdsh = nindxdsh+1
             indxdsh(nindxdsh) = i
           endif  
-          dmg_s(i) = (eps_sh(i) - eps_sh0(i)) / (dfs - eps_sh0(i))    
+          dmg_s(i) = (eps_sh(i) - eps_sh0(i)) / (dfs - eps_sh0(i))  
+          !print*, '  eps_sh(i) , eps_sh0(i) ', eps_sh(i) , eps_sh0(i)
           !dmg_s(i) = min(one,max(zero,(dmg_s(i) + as * dstr_sh(i)  ) ) )
 
           if (dmg_s(i)>=one)then 
@@ -251,17 +278,25 @@
           endif 
         endif      
       enddo
+      
 
       do i=1,nel
         uvar(i,1) = dmg_n(i)  
         uvar(i,2) = dmg_s(i)  
         dmg(i) =max(dmg_n(i),dmg_s(i))
+
       enddo
 
       do i=1,nel
-        signzz(i)  = signzz(i) * (one -  dmg_n(i))
-        signyz(i) =  signyz(i) * (one -  dmg_s(i))
-        signzx(i) =  signzx(i) * (one -  dmg_s(i))       
+        strs_tr_sh(i) =  sqrt( signyz(i)**2 + signzx(i)**2)
+        g2        =  strs_tr_sh(i) /(shrmax - sht_sl * signzz(i) )
+        g1        = max(signzz(i),zero)/ tenmax
+        sigeq     =  g1**pwrt + g2**pwrs
+        uvar(i,5) = sigeq
+                !write(*,*) ' signzz(i) dmgn = ', i, signzz(i), dmg_n(i)
+        signzz(i)     =  signzz(i) * (one -  dmg_n(i))
+        signyz(i)     =  signyz(i) * (one -  dmg_s(i))
+        signzx(i)     =  signzx(i) * (one -  dmg_s(i))       
       enddo
    
 !-------------------------

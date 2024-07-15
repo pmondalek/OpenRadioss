@@ -72,9 +72,9 @@
 !   l o c a l   v a r i a b l e s
 !-----------------------------------------------
       logical :: is_available,is_encrypted
-      integer :: ilaw,pwrt, pwrs
+      integer :: ilaw
       my_real :: rho0, young,shear, nu, thick, tenmax, gcten  ,shrmax, gcshr,             &
-                 shrp, sht_sl,unit_l                  
+                 shrp, sht_sl,unit_l  ,pwrt, pwrs,dp,dfs, dfn,limit_sh                
       ! -------------------------
 !=======================================================================
       is_encrypted = .false.
@@ -98,8 +98,8 @@
       !line 3 
       call hm_get_floatv('MAT169_SHRMAX'    ,shrmax    ,is_available, lsubmodel, unitab)
       call hm_get_floatv('MAT169_GCSHR'     ,gcshr     ,is_available, lsubmodel, unitab)
-      call hm_get_intv  ('MAT169_PWRT'      ,pwrt      ,is_available, lsubmodel)     
-      call hm_get_intv  ('MAT169_PWRS'      ,pwrs      ,is_available, lsubmodel)            
+      call hm_get_floatv('MAT169_PWRT'      ,pwrt      ,is_available, lsubmodel, unitab)     
+      call hm_get_floatv('MAT169_PWRS'      ,pwrs      ,is_available, lsubmodel, unitab)            
       call hm_get_floatv('MAT169_SHRP'      ,shrp      ,is_available, lsubmodel, unitab)
       call hm_get_floatv('MAT169_SHT_SL'    ,sht_sl    ,is_available, lsubmodel, unitab)
 !-------------------------------------
@@ -107,20 +107,49 @@
         call hm_get_floatv_dim('thick' ,unit_l ,is_available, lsubmodel, unitab)
         thick = one * unit_l
       endif
+
       shear   = young/(two * (one + nu))
 
+      dfn     =  two*gcten/tenmax !displacement failure in tension
+      dfs     = (two*gcshr/(one+shrp)/shrmax) 
+      dp      = shrp*dfs
+      
+      !condition on GC
+      if(gcten < (tenmax**2/two/young))then
+         gcten = tenmax**2/two/young
+          CALL ANCMSG(MSGID=3065,MSGTYPE=MSGWARNING,ANMODE=ANINFO_BLIND_1,     &
+                      I1 = MAT_ID,                                             &
+                      C1 = TITR,                                               &
+                      C2 = 'GCTEN',                                            &
+                      R1 =  gcten  )
+
+
+      endif
+      limit_sh = shrmax*dp + shrmax**2/two/shear
+      if(gcshr < limit_sh )then
+         gcshr = limit_sh
+         dfs     = (two*gcshr/(one+shrp)/shrmax) 
+         dp      = shrp*dfs
+         print*, 'dfs modifie' , dfs
+          CALL ANCMSG(MSGID=3066,MSGTYPE=MSGWARNING,ANMODE=ANINFO_BLIND_1,     &
+                      I1 = MAT_ID,                                             &
+                      C1 = TITR,                                               &
+                      C2 = 'GCSHR',                                            &
+                      R1 =  gcshr  )
+
+
+      endif
 !-------------------------------------
-      nuvar = 4
+      nuvar = 5
 !-------------------------------------
       
-      matparam%niparam = 2
-      matparam%nuparam = 10
+      matparam%niparam = 0
+      matparam%nuparam = 14
 !          
       allocate (matparam%uparam(matparam%nuparam))
       allocate (matparam%iparam(matparam%niparam))
 !     
-      matparam%iparam(1) =  pwrt
-      matparam%iparam(2) =  pwrs
+
 
       matparam%uparam(1) =   young 
       matparam%uparam(2) =   shear      
@@ -131,7 +160,11 @@
       matparam%uparam(7) =   gcshr
       matparam%uparam(8) =   shrp
       matparam%uparam(9) =   sht_sl
-      matparam%uparam(10) =  thick
+      matparam%uparam(10) =  dfn
+      matparam%uparam(11) =  dfs
+      matparam%uparam(12) =  dp
+      matparam%uparam(13) =  pwrt
+      matparam%uparam(14) =  pwrs
 !-------------------------------------------------
       pm(1)  = rho0
       pm(89) = rho0
@@ -150,7 +183,7 @@
         write(iout,'(5x,a,//)')'CONFIDENTIAL DATA'
       else
         write(iout,1060) rho0
-        write(iout,1100) young,nu, tenmax,shrmax, pwrt,pwrs,gcten  , gcshr,   & 
+        write(iout,1100) young,nu, tenmax,shrmax, pwrt,pwrs,gcten , gcshr,   & 
         shrp, sht_sl
       endif       
 !      parmat(1)  = c1   
@@ -175,8 +208,8 @@
       5x,'POISSON RATION . . . . . . . . . . . . . . . . . . .=',1PG20.13/,  &
       5x,'MAXIMAL TENSILE STRESS . . . . . . . . . . . . . . .=',1PG20.13/,  &
       5x,'MAXIMAL SHEAR STRESS . . . . . . . . . . . . . . . .=',1PG20.13/,  &
-      5x,'POWER TERM FOR TENSION . . . . . . . . . . . . . . .=',I10/,       &
-      5x,'POWER TERM FOR SHEAR . . . . . . . . . . . . . . . .=',I10/,       &
+      5x,'POWER TERM FOR TENSION . . . . . . . . . . . . . . .=',1PG20.13/,  &
+      5x,'POWER TERM FOR SHEAR . . . . . . . . . . . . . . . .=',1PG20.13/,  &
       5x,'ENERGY PER UNIT AREA TO FAIL IN TENSION. . . . . . .=',1PG20.13/,  &
       5x,'ENERGY PER UNIT AREA TO FAIL IN SHEAR. . . . . . . .=',1PG20.13/,  &
       5x,'SHEAR PLATEAU RATIO. . . . . . . . . . . . . . . . .=',1PG20.13/,  &
